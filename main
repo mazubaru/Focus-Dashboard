@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@200;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-warm-1: #2c1810;
+            --bg-warm-2: #804a31;
+            --text-color: #f5ebe0;
+            --panel-bg: rgba(44, 24, 16, 0.4); 
+            --border-color: rgba(245, 235, 224, 0.15);
+            --accent: #d4a373;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            font-family: 'Prompt', sans-serif;
+            overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+            color: var(--text-color);
+        }
+
+        #glcanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+
+        .dashboard-container { z-index: 1; width: 90%; max-width: 900px; display: flex; flex-direction: column; gap: 20px; }
+
+        .panel {
+            background: var(--panel-bg);
+            border-radius: 24px;
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 30px;
+        }
+
+        .header { text-align: center; padding: 15px; }
+        .header h1 { margin: 0; font-size: 1.2rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; opacity: 0.8; }
+
+        .main-layout { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
+
+        /* Clock */
+        .clock-area { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #time { font-size: 6rem; font-weight: 600; line-height: 1; margin-bottom: 10px; }
+
+        /* อัปเกรด To-Do Panel */
+        .todo-panel h2 { font-size: 1rem; margin: 0 0 15px 0; opacity: 0.8; }
+        #todo-input {
+            width: 100%; background: rgba(255,255,255,0.1); border: 1px solid var(--border-color);
+            border-radius: 10px; padding: 8px 12px; color: white; margin-bottom: 15px;
+            font-family: inherit; box-sizing: border-box; outline: none;
+        }
+        #todo-list { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; }
+        .todo-item { 
+            display: flex; align-items: center; justify-content: space-between; 
+            margin-bottom: 10px; font-size: 0.9rem; background: rgba(255,255,255,0.05);
+            padding: 8px; border-radius: 8px;
+        }
+        .todo-text { flex-grow: 1; margin: 0 10px; cursor: pointer; }
+        .todo-text.done { text-decoration: line-through; opacity: 0.5; }
+        .del-btn { cursor: pointer; opacity: 0.5; font-size: 0.7rem; border: none; background: none; color: white; }
+        .del-btn:hover { opacity: 1; color: #ff6b6b; }
+
+        /* Mixer */
+        .mixer-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+        .sound-card { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .btn-toggle { background: rgba(255,255,255,0.1); border: none; color: white; border-radius: 10px; padding: 5px 10px; font-size: 0.7rem; cursor: pointer; width: 100%; }
+        .btn-toggle.active { background: var(--accent); color: #2c1810; }
+        .vol-slider { width: 100%; accent-color: var(--accent); }
+    </style>
+</head>
+<body>
+
+    <canvas id="glcanvas"></canvas>
+
+    <div class="dashboard-container">
+        <div class="panel header"><h1>Focus Dashboard</h1></div>
+
+        <div class="main-layout">
+            <div class="panel clock-area">
+                <div id="time">00:00:00</div>
+                <div style="font-weight: 200; font-style: italic; opacity: 0.7; font-size: 0.9rem;">"Stay warm, stay focused."</div>
+            </div>
+
+            <div class="panel todo-panel">
+                <h2>Today's Plan</h2>
+                <input type="text" id="todo-input" placeholder="+ Add a task and press Enter">
+                <ul id="todo-list"></ul>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="mixer-grid">
+                <div class="sound-card">
+                    <span>🌧️</span>
+                    <button class="btn-toggle" id="btn-rain" onclick="togglePlay('rain')">PLAY</button>
+                    <input type="range" class="vol-slider" min="0" max="1" step="0.1" value="0.5" oninput="changeVol('rain', this.value)">
+                    <audio id="audio-rain" loop src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3"></audio>
+                </div>
+                <div class="sound-card">
+                    <span>🔥</span>
+                    <button class="btn-toggle" id="btn-fire" onclick="togglePlay('fire')">PLAY</button>
+                    <input type="range" class="vol-slider" min="0" max="1" step="0.1" value="0.5" oninput="changeVol('fire', this.value)">
+                    <audio id="audio-fire" loop src="https://www.soundjay.com/nature/sounds/fire-1.mp3"></audio>
+                </div>
+                <div class="sound-card">
+                    <span>☕</span>
+                    <button class="btn-toggle" id="btn-cafe" onclick="togglePlay('cafe')">PLAY</button>
+                    <input type="range" class="vol-slider" min="0" max="1" step="0.1" value="0.5" oninput="changeVol('cafe', this.value)">
+                    <audio id="audio-cafe" loop src="https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg"></audio>
+                </div>
+                <div class="sound-card">
+                    <span>🌲</span>
+                    <button class="btn-toggle" id="btn-forest" onclick="togglePlay('forest')">PLAY</button>
+                    <input type="range" class="vol-slider" min="0" max="1" step="0.1" value="0.5" oninput="changeVol('forest', this.value)">
+                    <audio id="audio-forest" loop src="https://actions.google.com/sounds/v1/ambiences/forest_daybreak.ogg"></audio>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Clock
+        function updateClock() {
+            document.getElementById('time').innerText = new Date().toLocaleTimeString('en-GB');
+        }
+        setInterval(updateClock, 1000); updateClock();
+
+        // 2. Interactive To-Do Logic
+        const todoInput = document.getElementById('todo-input');
+        const todoList = document.getElementById('todo-list');
+        let todos = JSON.parse(localStorage.getItem('focus-todos')) || [];
+
+        function saveAndRender() {
+            localStorage.setItem('focus-todos', JSON.stringify(todos));
+            todoList.innerHTML = '';
+            todos.forEach((todo, index) => {
+                const li = document.createElement('li');
+                li.className = 'todo-item';
+                li.innerHTML = `
+                    <input type="checkbox" ${todo.done ? 'checked' : ''} onchange="toggleDone(${index})">
+                    <span class="todo-text ${todo.done ? 'done' : ''}">${todo.text}</span>
+                    <button class="del-btn" onclick="deleteTodo(${index})">✕</button>
+                `;
+                todoList.appendChild(li);
+            });
+        }
+
+        todoInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && todoInput.value.trim() !== '') {
+                todos.push({ text: todoInput.value, done: false });
+                todoInput.value = '';
+                saveAndRender();
+            }
+        });
+
+        function toggleDone(index) { todos[index].done = !todos[index].done; saveAndRender(); }
+        function deleteTodo(index) { todos.splice(index, 1); saveAndRender(); }
+        saveAndRender();
+
+        // 3. Audio Control
+        function togglePlay(id) {
+            const audio = document.getElementById(`audio-${id}`);
+            const btn = document.getElementById(`btn-${id}`);
+            if (audio.paused) { audio.play(); btn.innerText = "STOP"; btn.classList.add('active'); }
+            else { audio.pause(); btn.innerText = "PLAY"; btn.classList.remove('active'); }
+        }
+        function changeVol(id, val) { document.getElementById(`audio-${id}`).volume = val; }
+
+        // 4. Warm Cozy Shader
+        const fragmentSource = `
+            precision highp float;
+            uniform float u_time;
+            uniform vec2 u_resolution;
+            void main() {
+                vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+                vec3 col1 = vec3(0.17, 0.09, 0.06); 
+                vec3 col2 = vec3(0.45, 0.25, 0.15); 
+                vec3 col3 = vec3(0.7, 0.4, 0.2); 
+                float noise = sin(uv.x * 1.5 + u_time * 0.1) * cos(uv.y * 1.5 + u_time * 0.15);
+                vec3 finalCol = mix(col1, col2, uv.y + noise);
+                finalCol = mix(finalCol, col3, noise * 0.4);
+                gl_FragColor = vec4(finalCol, 1.0);
+            }
+        `;
+        const canvas = document.getElementById('glcanvas');
+        const gl = canvas.getContext('webgl');
+        const program = gl.createProgram();
+        function createS(gl, t, s) { const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh); return sh; }
+        gl.attachShader(program, createS(gl, gl.VERTEX_SHADER, `attribute vec4 p; void main() { gl_Position = p; }`));
+        gl.attachShader(program, createS(gl, gl.FRAGMENT_SHADER, fragmentSource));
+        gl.linkProgram(program); gl.useProgram(program);
+        const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
+        const p = gl.getAttribLocation(program, "p"); gl.enableVertexAttribArray(p);
+        gl.vertexAttribPointer(p, 2, gl.FLOAT, false, 0, 0);
+        function render(t) {
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            gl.viewport(0, 0, canvas.width, canvas.height);
+            gl.uniform1f(gl.getUniformLocation(program, "u_time"), t * 0.001);
+            gl.uniform2f(gl.getUniformLocation(program, "u_resolution"), canvas.width, canvas.height);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            requestAnimationFrame(render);
+        }
+        requestAnimationFrame(render);
+    </script>
+</body>
+</html>
